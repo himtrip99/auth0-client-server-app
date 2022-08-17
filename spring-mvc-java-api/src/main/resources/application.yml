@@ -6,7 +6,7 @@ application:
 
 com:
   auth0:
-    domain: dev-n29jqgiv.us.auth0.com
+    domain: [domain]
     clientId: [clientid]
     clientSecret: [clientSecret]
 
