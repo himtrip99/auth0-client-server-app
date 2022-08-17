@@ -1,0 +1,10 @@
+version: "3"
+services:
+  client:
+    build: .
+    image: spa_angular_ts_hello-world:basic-authn-with-api
+    container_name: spa_angular_ts_hello-world_basic-authn-with-api
+    ports:
+      - 4040:4040
+    env_file:
+      - .env
