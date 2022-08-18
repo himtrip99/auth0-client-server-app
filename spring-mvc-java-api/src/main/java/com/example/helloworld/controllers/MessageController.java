@@ -1,10 +1,13 @@
 package com.example.helloworld.controllers;
 
+import com.example.helloworld.models.Action;
+import com.example.helloworld.models.ApplicationActions;
 import com.example.helloworld.models.Message;
 import com.example.helloworld.services.MessageService;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +23,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,27 +60,32 @@ public class MessageController {
     ResponseEntity<String> result = getCall(getActionsUrl);
     JSONObject actions = new JSONObject(result.getBody());
     JSONArray array = actions.getJSONArray("actions");
-    HashMap<String, Map<String,String>> respJson = new HashMap<>();
+    HashMap<String, Map<String, String>> respJson = new HashMap<>();
     for (int i = 0; i < array.length(); i++) {
       JSONObject object = array.getJSONObject(i);
       Map appInfo = new HashMap();
-      appInfo.put("action_name",object.getString("name"));
+      ApplicationActions appActions = new ApplicationActions();
+      Action action = new Action();
+      appInfo.put("action_name", object.getString("name"));
+      appInfo.put("status", object.getString("status"));
+      action.setActionName(object.getString("name"));
       Scanner scanner = new Scanner(object.getString("code"));
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
-        if(line.contains("event.client.name")){
-          Matcher matcher = Pattern.compile("[\"'](.+)[\"']").matcher(line);
+        if (line.contains("event.client.name")) {
+          Matcher matcher = Pattern.compile("\"([^\"]*)\"").matcher(line);
           if (matcher.find()) {
-            appInfo.put("application_name",matcher.group(1));
+            appInfo.put("application_name", matcher.group(1));
+            appActions.setApplicationName(matcher.group(1));
           }
         }
       }
-
+      action.setSupportedTriggers(object.getJSONArray("supported_triggers").getJSONObject(0).getString("id"));
       appInfo.put("supported_triggers", object.getJSONArray("supported_triggers").getJSONObject(0).getString("id"));
-      respJson.put(Integer.toString(i),appInfo);
+      respJson.put(Integer.toString(i), appInfo);
       scanner.close();
     }
-    return new ResponseEntity<String>(respJson.toString(), HttpStatus.OK);
+    return new ResponseEntity<String>(prepareJsonResponse(respJson), HttpStatus.OK);
   }
 
   public ResponseEntity<String> getCall(String url) {
@@ -111,4 +117,26 @@ public class MessageController {
 
     return result.get("access_token");
   }
+
+
+  public String prepareJsonResponse(HashMap<String, Map<String, String>> respJson) throws JsonProcessingException {
+    ArrayList<ApplicationActions> arrayList = new ArrayList();
+    for (String str : respJson.keySet()) {
+      ApplicationActions appActionss = new ApplicationActions();
+      HashMap<String, String> map = (HashMap<String, String>) respJson.get(str);
+      appActionss.setApplicationName(map.get("application_name"));
+      Action action = new Action();
+      ArrayList<Action> actionList = new ArrayList<>();
+      action.setActionName(map.get("action_name"));
+      action.setSupportedTriggers(map.get("supported_triggers"));
+      action.setStatus(map.get("status"));
+      actionList.add(action);
+      appActionss.setActions(actionList);
+      arrayList.add(appActionss);
+    }
+    ObjectMapper Obj = new ObjectMapper();
+    String returnStr = Obj.writeValueAsString(arrayList);
+    return returnStr;
+  }
+
 }
