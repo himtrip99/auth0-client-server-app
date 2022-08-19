@@ -43,6 +43,9 @@ public class MessageController {
   @Value(value = "${auth0.management.api.get.actions.url}")
   private String getActionsUrl;
 
+  @Value(value = "${auth0.management.api.get.clients.url}")
+  private String getClientsUrl;
+
   @GetMapping("/public")
   public Message getPublic() {
     return messageService.getPublicMessage();
@@ -58,6 +61,7 @@ public class MessageController {
   @ResponseBody
   public ResponseEntity<String> getApplicationActions(HttpServletRequest request, HttpServletResponse response) throws JsonParseException, JsonProcessingException {
     ResponseEntity<String> result = getCall(getActionsUrl);
+    ArrayList appList = getApplications();
     JSONObject actions = new JSONObject(result.getBody());
     JSONArray array = actions.getJSONArray("actions");
     HashMap<String, Map<String, String>> respJson = new HashMap<>();
@@ -74,9 +78,9 @@ public class MessageController {
         String line = scanner.nextLine();
         if (line.contains("event.client.name")) {
           Matcher matcher = Pattern.compile("\"([^\"]*)\"").matcher(line);
-          if (matcher.find()) {
-            appInfo.put("application_name", matcher.group(1));
-            appActions.setApplicationName(matcher.group(1));
+          if (matcher.find() && appList.contains(matcher.group(1))) {
+              appInfo.put("application_name", matcher.group(1));
+              appActions.setApplicationName(matcher.group(1));
           }
         }
       }
@@ -86,6 +90,25 @@ public class MessageController {
       scanner.close();
     }
     return new ResponseEntity<String>(prepareJsonResponse(respJson), HttpStatus.OK);
+  }
+
+
+
+  @GetMapping("/getClients")
+  @ResponseBody
+  public ResponseEntity<String> getClients(HttpServletRequest request, HttpServletResponse response) throws JsonParseException, JsonProcessingException {
+    return new ResponseEntity<String>(getApplications().toString(), HttpStatus.OK);
+  }
+
+  public ArrayList<String> getApplications() {
+    ResponseEntity<String> result = getCall(getClientsUrl);
+    JSONArray clients = new JSONArray(result.getBody());
+    ArrayList<String> appList = new ArrayList();
+    for (int i = 0; i < clients.length(); i++) {
+      JSONObject object = clients.getJSONObject(i);
+      appList.add(object.getString("name"));
+    }
+    return appList;
   }
 
   public ResponseEntity<String> getCall(String url) {
@@ -117,6 +140,9 @@ public class MessageController {
 
     return result.get("access_token");
   }
+
+
+
 
 
   public String prepareJsonResponse(HashMap<String, Map<String, String>> respJson) throws JsonProcessingException {

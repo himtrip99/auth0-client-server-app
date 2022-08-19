@@ -18,6 +18,9 @@ auth0:
         actions:
               url: https://[domain]/api/v2/actions/actions
 
+        clients:
+              url: https://[domain]/api/v2/clients
+
 server:
   error:
     whitelabel:
