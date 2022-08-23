@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -148,18 +149,34 @@ public class MessageController {
   public String prepareJsonResponse(HashMap<String, Map<String, String>> respJson) throws JsonProcessingException {
     ArrayList<ApplicationActions> arrayList = new ArrayList();
     for (String str : respJson.keySet()) {
-      ApplicationActions appActionss = new ApplicationActions();
+      ApplicationActions appActionss = null;
       HashMap<String, String> map = (HashMap<String, String>) respJson.get(str);
-      appActionss.setApplicationName(map.get("application_name"));
-      Action action = new Action();
-      ArrayList<Action> actionList = new ArrayList<>();
-      action.setActionName(map.get("action_name"));
-      action.setSupportedTriggers(map.get("supported_triggers"));
-      action.setStatus(map.get("status"));
-      actionList.add(action);
-      appActionss.setActions(actionList);
-      arrayList.add(appActionss);
+      appActionss = arrayList.stream().filter(appAction -> map.get("application_name").equals(appAction.getApplicationName())).findAny().orElse(null);
+      if(appActionss!=null){
+        Action action = new Action();
+        ArrayList<Action> actionList = (ArrayList<Action>) appActionss.getActions();
+        action.setActionName(map.get("action_name"));
+        action.setSupportedTriggers(map.get("supported_triggers"));
+        action.setStatus(map.get("status"));
+        actionList.add(action);
+        appActionss.setActions(actionList);
+        arrayList.add(appActionss);
+      }
+      else{
+        appActionss = new ApplicationActions();
+        appActionss.setApplicationName(map.get("application_name"));
+        Action action = new Action();
+        ArrayList<Action> actionList = new ArrayList<>();
+        action.setActionName(map.get("action_name"));
+        action.setSupportedTriggers(map.get("supported_triggers"));
+        action.setStatus(map.get("status"));
+        actionList.add(action);
+        appActionss.setActions(actionList);
+        arrayList.add(appActionss);
+      }
+
     }
+    arrayList = (ArrayList<ApplicationActions>) arrayList.stream().distinct().collect(Collectors.toList());
     ObjectMapper Obj = new ObjectMapper();
     String returnStr = Obj.writeValueAsString(arrayList);
     return returnStr;
