@@ -151,20 +151,33 @@ public class MessageController {
     for (String str : respJson.keySet()) {
       ApplicationActions appActionss = null;
       HashMap<String, String> map = (HashMap<String, String>) respJson.get(str);
-      appActionss = arrayList.stream().filter(appAction -> map.get("application_name").equals(appAction.getApplicationName())).findAny().orElse(null);
-      if(appActionss!=null){
-        Action action = new Action();
-        ArrayList<Action> actionList = (ArrayList<Action>) appActionss.getActions();
-        action.setActionName(map.get("action_name"));
-        action.setSupportedTriggers(map.get("supported_triggers"));
-        action.setStatus(map.get("status"));
-        actionList.add(action);
-        appActionss.setActions(actionList);
-        arrayList.add(appActionss);
+      if(map.get("application_name")!=null && !map.get("application_name").isEmpty()) {
+        appActionss = arrayList.stream().filter(appAction -> map.get("application_name").equals(appAction.getApplicationName())).findAny().orElse(null);
+        if (appActionss != null) {
+          Action action = new Action();
+          ArrayList<Action> actionList = (ArrayList<Action>) appActionss.getActions();
+          action.setActionName(map.get("action_name"));
+          action.setSupportedTriggers(map.get("supported_triggers"));
+          action.setStatus(map.get("status"));
+          actionList.add(action);
+          appActionss.setActions(actionList);
+          arrayList.add(appActionss);
+        } else {
+          appActionss = new ApplicationActions();
+          appActionss.setApplicationName(map.get("application_name"));
+          Action action = new Action();
+          ArrayList<Action> actionList = new ArrayList<>();
+          action.setActionName(map.get("action_name"));
+          action.setSupportedTriggers(map.get("supported_triggers"));
+          action.setStatus(map.get("status"));
+          actionList.add(action);
+          appActionss.setActions(actionList);
+          arrayList.add(appActionss);
+        }
       }
       else{
         appActionss = new ApplicationActions();
-        appActionss.setApplicationName(map.get("application_name"));
+        appActionss.setApplicationName("no app found");
         Action action = new Action();
         ArrayList<Action> actionList = new ArrayList<>();
         action.setActionName(map.get("action_name"));
