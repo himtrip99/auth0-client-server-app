@@ -72,23 +72,27 @@ public class MessageController {
       ApplicationActions appActions = new ApplicationActions();
       Action action = new Action();
       appInfo.put("action_name", object.getString("name"));
+      if(object.has("status"))
       appInfo.put("status", object.getString("status"));
       action.setActionName(object.getString("name"));
-      Scanner scanner = new Scanner(object.getString("code"));
-      while (scanner.hasNextLine()) {
-        String line = scanner.nextLine();
-        if (line.contains("event.client.name")) {
-          Matcher matcher = Pattern.compile("\"([^\"]*)\"").matcher(line);
-          if (matcher.find() && appList.contains(matcher.group(1))) {
+      if(object.has("code")) {
+        Scanner scanner = new Scanner(object.getString("code"));
+        while (scanner.hasNextLine()) {
+          String line = scanner.nextLine();
+          if (line.contains("event.client.name")) {
+            Matcher matcher = Pattern.compile("\"([^\"]*)\"").matcher(line);
+            if (matcher.find() && appList.contains(matcher.group(1))) {
               appInfo.put("application_name", matcher.group(1));
               appActions.setApplicationName(matcher.group(1));
+            }
           }
         }
+        scanner.close();
       }
       action.setSupportedTriggers(object.getJSONArray("supported_triggers").getJSONObject(0).getString("id"));
       appInfo.put("supported_triggers", object.getJSONArray("supported_triggers").getJSONObject(0).getString("id"));
       respJson.put(Integer.toString(i), appInfo);
-      scanner.close();
+
     }
     return new ResponseEntity<String>(prepareJsonResponse(respJson), HttpStatus.OK);
   }
